@@ -1,0 +1,50 @@
+{
+  "name": "logscope",
+  "version": "1.2.0",
+  "description": "A focused local-first log investigation workspace",
+  "main": "app/main.cjs",
+  "private": true,
+  "author": "Logscope",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "test": "node --test tests/core.test.cjs",
+    "test:e2e": "playwright test",
+    "test:package": "node scripts/smoke-package.cjs",
+    "check": "node scripts/check.cjs",
+    "demo": "node scripts/generate-demo.cjs",
+    "icon": "node scripts/generate-icon.cjs",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "iconv-lite": "0.7.3"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.1",
+    "electron": "45.0.0",
+    "electron-builder": "26.15.3"
+  },
+  "build": {
+    "appId": "dev.logscope.desktop",
+    "productName": "Logscope",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "app/**/*",
+      "examples/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "portable"
+      ],
+      "icon": "app/assets/icon.ico",
+      "signExecutable": false
+    },
+    "portable": {
+      "artifactName": "Logscope-${version}-portable.exe"
+    }
+  }
+}

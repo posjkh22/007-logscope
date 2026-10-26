@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Logscope — Log investigation workspace</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="renderer.js" defer></script>
+</head>
+<body>
+  <header class="titlebar">
+    <div class="brand"><span class="brand-mark">≋</span><strong>logscope<span class="brand-dot">.</span></strong><span class="edition">DESKTOP</span></div>
+    <div class="titlebar-center"><span class="icon" data-icon="layers"></span> 로그 탐색 워크스페이스 <span class="version">v1.2</span></div>
+    <div class="titlebar-actions"><button id="command-button" class="command-button" title="명령 팔레트 (Ctrl+K)"><span data-icon="command"></span><kbd>Ctrl K</kbd></button><div class="window-controls"><button data-window="minimize" aria-label="최소화">―</button><button data-window="maximize" aria-label="최대화">□</button><button data-window="close" aria-label="닫기">×</button></div></div>
+  </header>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="workspace-heading"><span class="workspace-icon" data-icon="box"></span><div><strong id="workspace-title">내 워크스페이스</strong><span>LOCAL LOG EXPLORER</span></div><button class="icon-button" id="workspace-menu" title="작업 공간 비우기" aria-label="작업 공간 비우기" data-icon="more"></button></div>
+      <div class="import-buttons"><button id="add-folder" class="button primary" title="선택한 폴더 아래의 로그 파일들을 현재 목록에 합칩니다. 폴더를 계속 감시하지는 않습니다."><span data-icon="folder-plus"></span>폴더 가져오기</button><button id="add-files" class="button" title="로그 파일 추가" aria-label="로그 파일 추가" data-icon="file-plus"></button></div>
+      <p class="import-help">폴더 아래 로그를 현재 목록에 추가합니다.<br>새 파일은 폴더를 다시 가져와 갱신하세요.</p>
+      <div class="section-label">탐색기 <span id="file-count" class="tiny-count">0</span><button id="select-all-files" class="text-button">전체 선택</button></div>
+      <div class="file-filter"><span data-icon="search"></span><input id="file-filter" placeholder="파일 이름으로 필터…" aria-label="파일 이름 필터"></div>
+      <div class="file-management"><button id="remove-selected" class="toolbar-button" title="검색 대상으로 체크한 파일들을 목록에서 제거합니다. 원본 파일은 유지됩니다."><span data-icon="close"></span>선택 제거<span id="remove-selected-count" class="tiny-count">0</span></button><button id="workspace-reset" class="toolbar-button" title="파일 목록·검색 결과·검색 조건 초기화"><span data-icon="rotate"></span>초기화</button></div>
+      <div class="removal-note">목록에서만 제거 · 원본 파일 유지</div>
+      <div id="file-list" class="file-list"></div>
+      <button id="drop-hint" class="drop-hint"><span data-icon="upload"></span><span>파일이나 폴더를 여기에 드롭</span></button>
+      <section class="saved-section"><div class="section-label">저장한 검색 <button id="save-search" class="icon-button small" title="현재 검색 저장" aria-label="현재 검색 저장" data-icon="plus"></button></div><div id="saved-searches" class="saved-searches"></div></section>
+      <div class="sidebar-bottom"><button id="bookmarks-button" class="sidebar-link"><span data-icon="bookmark"></span>북마크<span id="bookmark-count" class="tiny-count">0</span></button><button id="help-button" class="sidebar-link"><span data-icon="keyboard"></span>키보드 단축키<span class="shortcut-label">?</span></button><div class="local-note"><span class="live-dot"></span>내 컴퓨터에서 안전하게 처리</div></div>
+    </aside>
+    <main class="main">
+      <nav class="workspace-nav" aria-label="작업 화면">
+        <div class="workspace-tablist" role="tablist" aria-label="검색과 원문 분석">
+          <button id="results-tab" class="workspace-tab active" role="tab" aria-selected="true" aria-controls="results-panel"><span data-icon="search"></span>통합 검색<span id="results-tab-count" class="tiny-count">0</span><kbd>Ctrl 1</kbd></button>
+          <button id="viewer-tab" class="workspace-tab" role="tab" aria-selected="false" aria-controls="viewer-panel" tabindex="-1"><span data-icon="terminal"></span>로그 뷰어<span id="viewer-tab-name" class="workspace-tab-file"></span><kbd>Ctrl 2</kbd></button>
+        </div>
+        <div class="heading-actions"><span id="demo-badge" class="demo-badge" hidden>DEMO WORKSPACE</span><button id="history-button" class="icon-button" title="최근 검색" aria-label="최근 검색" data-icon="history"></button><button id="export-button" class="button subtle" title="전체 통합 검색 결과를 CSV 또는 JSON으로 저장"><span data-icon="download"></span>내보내기</button></div>
+      </nav>
+      <section id="global-search" class="search-section" aria-label="통합 검색 조건">
+        <form id="search-form" class="search-form"><span class="search-leading" data-icon="search"></span><input id="query" placeholder="검색어를 입력하세요. 예: timeout, connection refused…" autocomplete="off" spellcheck="false" aria-label="전체 파일 검색어"><div class="search-toggles"><button type="button" id="case-toggle" class="toggle-button" title="대소문자 구분" aria-label="대소문자 구분" aria-pressed="false">Aa</button><button type="button" id="word-toggle" class="toggle-button word" title="단어 단위 검색" aria-label="단어 단위 검색" aria-pressed="false">ab</button><button type="button" id="regex-toggle" class="toggle-button" title="정규식 검색" aria-label="정규식 검색" aria-pressed="false">.*</button></div><button id="search-button" class="button primary search-submit" type="submit">검색<span data-icon="arrow-right"></span></button></form>
+        <div class="search-options"><div class="option-left"><button id="filters-button" class="filter-button"><span data-icon="sliders"></span>상세 필터<span id="active-filter-count" class="filter-count" hidden>0</span><span data-icon="chevron-down"></span></button><div class="option-divider"></div><span class="scope-label" id="scope-label">모든 파일에서 검색</span></div><div class="quick-levels"><span class="muted">레벨</span><button data-level="ERROR" class="level-filter error"><i></i>ERROR</button><button data-level="WARN" class="level-filter warn"><i></i>WARN</button><button data-level="INFO" class="level-filter info"><i></i>INFO</button><button id="reset-filters" class="icon-button small" title="필터 초기화" aria-label="필터 초기화" data-icon="rotate"></button></div></div>
+        <div id="filters-panel" class="filters-panel" hidden><label>검색 방식<select id="search-mode"><option value="literal">문구 그대로</option><option value="all">모든 단어 포함 (AND)</option><option value="any">하나 이상 포함 (OR)</option></select></label><label>파일 패턴<input id="glob" placeholder="*.log, **/server/*.txt"></label><label>제외할 문구<input id="exclude" placeholder="healthcheck, heartbeat"></label><label>인코딩<select id="encoding"><option value="auto">자동 (UTF-8 / CP949 / UTF-16LE)</option><option value="utf8">UTF-8</option><option value="cp949">CP949 / EUC-KR</option><option value="utf16le">UTF-16 LE</option></select></label><label>시작 시간<input id="date-from" type="datetime-local" step="1"></label><label>종료 시간<input id="date-to" type="datetime-local" step="1"></label><label>결과 상한<select id="result-limit"><option value="20000">20,000건</option><option value="50000">50,000건</option><option value="100000">100,000건</option></select></label><label>다른 레벨<select id="extra-level"><option value="">추가 레벨 선택</option><option value="TRACE">TRACE</option><option value="DEBUG">DEBUG</option><option value="FATAL">FATAL</option><option value="OTHER">레벨 없는 행</option></select></label></div>
+      </section>
+      <div class="investigation" id="investigation">
+        <section id="results-panel" class="results-pane" role="tabpanel" aria-labelledby="results-tab"><header class="panel-header"><div class="panel-title"><span data-icon="list"></span><strong>검색 결과</strong><span id="result-count" class="count-badge">0</span></div><div class="panel-actions"><span id="elapsed" class="muted"></span><button id="result-sort" class="icon-button small" title="정렬: 파일 순 / 최신 순" aria-label="검색 결과 정렬" data-icon="sort"></button></div></header><div id="results-summary" class="results-summary">검색할 로그 파일을 추가해 주세요.</div><div id="search-progress" class="search-progress" hidden><div></div></div><div id="results-list" class="results-list" tabindex="0" aria-label="검색 결과 목록"></div><footer class="results-footer"><span><span class="keycap">↑</span><span class="keycap">↓</span> 결과 선택</span><span><span class="keycap">↵</span> 원문 열기 · Ctrl+1로 검색 결과 돌아가기</span></footer></section>
+        <section id="viewer-panel" class="viewer-pane" role="tabpanel" aria-labelledby="viewer-tab" hidden>
+          <header class="panel-header viewer-header">
+            <div class="panel-title"><span data-icon="file"></span><strong id="viewer-file-name">로그 뷰어</strong></div>
+            <span id="viewer-path" class="viewer-path"></span>
+            <div class="panel-actions"><button id="copy-path" class="icon-button small" title="전체 파일 경로 복사" aria-label="전체 파일 경로 복사" data-icon="copy"></button><button id="tail-toggle" class="live-button" aria-pressed="false" title="1.5초 간격으로 파일 끝부분 자동 갱신"><span class="live-dot"></span>LIVE</button><button id="reveal-button" class="icon-button small" title="탐색기에서 파일 보기" aria-label="탐색기에서 파일 보기" data-icon="external"></button></div>
+          </header>
+          <div id="viewer-tabs" class="viewer-tabs"></div>
+          <div class="viewer-search"><span data-icon="search"></span><select id="viewer-mode" aria-label="파일 검색 방식" title="여러 검색어는 공백으로 나누고, 공백이 들어간 문구는 큰따옴표로 묶으세요."><option value="literal">문구 그대로</option><option value="any">하나 이상 (OR)</option><option value="all">모두 포함 (AND)</option><option value="regex" disabled hidden>정규식</option></select><input id="viewer-query" placeholder="현재 파일 전체에서 검색…" aria-label="현재 파일 검색어" aria-describedby="viewer-query-help" spellcheck="false"><button id="viewer-case" class="toggle-button small" title="뷰어 대소문자 구분" aria-label="뷰어 대소문자 구분" aria-pressed="false">Aa</button><button id="viewer-regex" class="toggle-button small" title="뷰어 정규식" aria-label="뷰어 정규식" aria-pressed="false">.*</button><span id="viewer-find-count" class="find-count">0 / 0</span><button id="find-prev" class="icon-button small" title="이전 일치 (Shift+F3)" aria-label="이전 일치" data-icon="chevron-up"></button><button id="find-next" class="icon-button small" title="다음 일치 (F3)" aria-label="다음 일치" data-icon="chevron-down"></button><button id="viewer-search-button" class="button primary">파일 전체 검색</button></div>
+          <div id="viewer-query-help" class="viewer-query-help" role="status" aria-live="polite" hidden></div>
+          <div class="viewer-toolbar"><div><button id="matches-only" class="toolbar-button" aria-pressed="false"><span data-icon="filter"></span>일치 행만</button><button id="wrap-toggle" class="toolbar-button" aria-pressed="false"><span data-icon="wrap"></span>줄바꿈</button><button id="highlight-button" class="toolbar-button" title="쉼표로 구분한 키워드에 여러 색상 적용"><span data-icon="highlighter"></span>하이라이트</button><button id="file-results-toggle" class="toolbar-button" aria-pressed="true"><span data-icon="list"></span>하단 검색 결과</button><button id="trace-search" class="toolbar-button" title="선택한 텍스트 또는 현재 행의 trace_id / request_id를 전체 파일에서 추적"><span data-icon="layers"></span>ID 추적</button></div><div><button id="detail-button" class="icon-button small mono" title="선택한 행 상세 / JSON 보기" aria-label="행 상세 보기">{ }</button><button id="bookmark-line" class="icon-button small" title="현재 행 북마크 (Ctrl+B)" aria-label="현재 행 북마크" data-icon="bookmark"></button><button id="copy-line" class="icon-button small" title="현재 행 복사" aria-label="현재 행 복사" data-icon="copy"></button></div></div>
+          <div id="highlight-panel" class="highlight-panel" hidden><span class="muted">컬러 키워드</span><input id="highlight-terms" placeholder="timeout, trace_id, payment-db" aria-label="컬러 하이라이트 키워드"><span class="color-dots"><i></i><i></i><i></i></span></div>
+          <div id="viewer-content" class="viewer-content" tabindex="0" aria-label="로그 원문"></div>
+          <div id="line-detail" class="line-detail" hidden></div>
+          <div id="file-results-splitter" class="horizontal-splitter" role="separator" aria-label="파일 검색 결과 높이 조절" aria-orientation="horizontal" tabindex="0" hidden></div>
+          <section id="file-results-panel" class="file-results-panel" aria-label="현재 파일 전체 검색 결과" hidden>
+            <header class="file-results-header"><div class="panel-title"><span data-icon="list"></span><strong>파일 검색 결과</strong><span id="file-results-count" class="count-badge">0</span><span id="file-results-status" class="muted">검색어를 입력하세요</span></div><div class="panel-actions"><button id="copy-file-results" class="toolbar-button"><span data-icon="copy"></span>결과 복사</button><button id="close-file-results" class="icon-button small" title="검색 결과 접기" aria-label="검색 결과 접기" data-icon="chevron-down"></button></div></header>
+            <div class="file-results-filters"><label>레벨<select id="viewer-level"><option value="">전체 레벨</option><option>ERROR</option><option>WARN</option><option>INFO</option><option>DEBUG</option><option>TRACE</option><option>FATAL</option><option value="OTHER">레벨 없는 행</option></select></label><label class="exclude-filter">제외<input id="viewer-exclude" placeholder="healthcheck, heartbeat" aria-label="현재 파일 검색 제외 문구"></label><span id="file-level-summary" class="muted"></span></div>
+            <div id="file-results-list" class="file-results-list" tabindex="0" aria-label="파일 내 일치 목록"></div>
+          </section>
+          <footer class="viewer-footer"><span id="viewer-position">파일을 선택해 주세요</span><div><button id="page-prev" class="icon-button small" title="이전 구간" aria-label="이전 구간" data-icon="chevron-up"></button><button id="page-next" class="icon-button small" title="다음 구간" aria-label="다음 구간" data-icon="chevron-down"></button><button id="goto-button" class="toolbar-button">행 이동 <kbd>Ctrl G</kbd></button></div></footer>
+        </section>
+      </div>
+    </main>
+  </div>
+  <footer class="statusbar"><div><span class="live-dot"></span><span id="status-text">준비됨</span><span class="status-divider"></span><span id="status-files">0 files</span></div><div class="font-controls"><button id="font-down" title="로그 글자 작게" aria-label="로그 글자 작게">A−</button><span id="font-size">11px</span><button id="font-up" title="로그 글자 크게" aria-label="로그 글자 크게">A+</button><span class="status-divider"></span><span id="status-encoding">UTF-8</span><span class="status-divider"></span><span data-icon="shield"></span>로컬 전용<span class="status-divider"></span><button id="demo-button">샘플 로그 열기</button></div></footer>
+  <div id="toast-container" class="toast-container" role="status" aria-live="polite"></div>
+  <div id="drop-overlay" class="drop-overlay" hidden><div><span data-icon="folder-plus"></span><h2>로그를 여기에 놓으세요</h2><p>여러 파일과 폴더를 한 번에 추가할 수 있습니다.</p></div></div>
+  <dialog id="modal"><div id="modal-content"></div></dialog>
+</body>
+</html>
